@@ -1,18 +1,31 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import UserForm from './components/UserForm'
 import AdminPage from './components/AdminPage'
 import RoomsPage from './components/RoomsPage'
 import './App.css'
 
+function Navigation() {
+  const location = useLocation();
+
+  // Don't show navigation on the player registration page
+  if (location.pathname === '/') {
+    return null;
+  }
+
+  return (
+    <nav className="app-nav">
+      <Link to="/" className="nav-link">Player Registration</Link>
+      <Link to="/admin" className="nav-link">Admin Dashboard</Link>
+      <Link to="/rooms" className="nav-link">Rooms</Link>
+    </nav>
+  );
+}
+
 function App() {
   return (
     <Router>
       <div className="App">
-        <nav className="app-nav">
-          <Link to="/" className="nav-link">Player Registration</Link>
-          <Link to="/admin" className="nav-link">Admin Dashboard</Link>
-          <Link to="/rooms" className="nav-link">Rooms</Link>
-        </nav>
+        <Navigation />
 
         <Routes>
           <Route path="/" element={<UserForm />} />

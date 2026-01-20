@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './AdminPage.css';
+import API_URL from '../config/api';
 
 const AdminPage = () => {
   const [users, setUsers] = useState([]);
@@ -13,7 +14,7 @@ const AdminPage = () => {
   // Fetch all users
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/users');
+      const response = await fetch(`${API_URL}/api/users`);
       const data = await response.json();
       if (data.success) {
         setUsers(data.data);
@@ -26,7 +27,7 @@ const AdminPage = () => {
   // Fetch all rooms
   const fetchRooms = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/rooms');
+      const response = await fetch(`${API_URL}/api/admin/rooms`);
       const data = await response.json();
       if (data.success) {
         setRooms(data.data);
@@ -39,7 +40,7 @@ const AdminPage = () => {
   // Fetch room members
   const fetchRoomMembers = async (roomId) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/rooms/${roomId}/members`);
+      const response = await fetch(`${API_URL}/api/admin/rooms/${roomId}/members`);
       const data = await response.json();
       if (data.success) {
         setRoomMembers(data.data);
@@ -66,7 +67,7 @@ const AdminPage = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/users/random/50');
+      const response = await fetch(`${API_URL}/api/admin/users/random/50`);
       const data = await response.json();
 
       if (data.success) {
@@ -111,7 +112,7 @@ const AdminPage = () => {
       const roomName = `Room ${roomNumber}`;
 
       // Create room
-      const roomResponse = await fetch('http://localhost:3000/api/admin/rooms', {
+      const roomResponse = await fetch(`${API_URL}/api/admin/rooms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +134,7 @@ const AdminPage = () => {
 
       // Add users to room
       const userIds = selectedUsers.map(user => user.id);
-      const membersResponse = await fetch(`http://localhost:3000/api/admin/rooms/${roomId}/members`, {
+      const membersResponse = await fetch(`${API_URL}/api/admin/rooms/${roomId}/members`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

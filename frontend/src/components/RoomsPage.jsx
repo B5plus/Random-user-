@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './RoomsPage.css';
+import API_URL from '../config/api';
 
 const RoomsPage = () => {
   const [rooms, setRooms] = useState([]);
@@ -95,6 +96,60 @@ const RoomsPage = () => {
     setShowDeleteConfirm(false);
   };
 
+  // Download player list as TXT
+  const downloadPlayerList = () => {
+    if (!selectedRoom || roomMembers.length === 0) return;
+
+    // Create text content
+    let textContent = '';
+    textContent += `========================================\n`;
+    textContent += `${selectedRoom.name.toUpperCase()}\n`;
+    textContent += `========================================\n`;
+    textContent += `Total Players: ${roomMembers.length}\n`;
+    textContent += `Capacity: ${selectedRoom.capacity}\n`;
+    textContent += `Created: ${new Date(selectedRoom.created_at).toLocaleString()}\n`;
+    textContent += `========================================\n\n`;
+
+    textContent += `PLAYER LIST:\n`;
+    textContent += `----------------------------------------\n\n`;
+
+    roomMembers.forEach((member, index) => {
+      textContent += `${index + 1}. ${member.user_name}\n`;
+      textContent += `   WhatsApp: ${member.whatsapp_phone}\n`;
+      textContent += `   Department: ${member.department}\n`;
+      textContent += `   Added: ${new Date(member.added_at).toLocaleString()}\n`;
+      textContent += `\n`;
+    });
+
+    textContent += `========================================\n`;
+    textContent += `End of List\n`;
+    textContent += `Downloaded: ${new Date().toLocaleString()}\n`;
+    textContent += `========================================\n`;
+
+    // Create blob and download
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${selectedRoom.name}_Players_${new Date().toISOString().split('T')[0]}.txt`);
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setMessage({
+      type: 'success',
+      text: `Player list downloaded successfully! 📥`
+    });
+
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      setMessage({ type: '', text: '' });
+    }, 3000);
+  };
+
   useEffect(() => {
     fetchRooms();
   }, []);
@@ -168,13 +223,22 @@ const RoomsPage = () => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    className="delete-room-btn"
-                    onClick={handleDeleteRoom}
-                    disabled={loading}
-                  >
-                    🗑️ Delete Room
-                  </button>
+                  <div className="room-action-buttons">
+                    <button
+                      className="download-list-btn"
+                      onClick={downloadPlayerList}
+                      disabled={loading || roomMembers.length === 0}
+                    >
+                      📥 Download List
+                    </button>
+                    <button
+                      className="delete-room-btn"
+                      onClick={handleDeleteRoom}
+                      disabled={loading}
+                    >
+                      🗑️ Delete Room
+                    </button>
+                  </div>
                 </div>
               </div>
 
