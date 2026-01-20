@@ -13,7 +13,21 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY,
 );
 
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "https://random-user-1-yf7c.onrender.com",
+    process.env.FRONTEND_URL,
+  ].filter(Boolean),
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.get("/api/health", (req, res) => {
