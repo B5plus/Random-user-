@@ -13,7 +13,7 @@ const RoomsPage = () => {
   // Fetch all rooms
   const fetchRooms = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/admin/rooms');
+      const response = await fetch(`${API_URL}/api/admin/rooms`);
       const data = await response.json();
       if (data.success) {
         setRooms(data.data);
@@ -27,7 +27,7 @@ const RoomsPage = () => {
   const fetchRoomMembers = async (roomId) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/rooms/${roomId}/members`);
+      const response = await fetch(`${API_URL}/api/admin/rooms/${roomId}/members`);
       const data = await response.json();
       if (data.success) {
         setRoomMembers(data.data);
@@ -57,7 +57,7 @@ const RoomsPage = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/rooms/${selectedRoom.id}`, {
+      const response = await fetch(`${API_URL}/api/admin/rooms/${selectedRoom.id}`, {
         method: 'DELETE',
       });
 
