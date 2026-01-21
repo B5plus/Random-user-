@@ -18,6 +18,7 @@ function AdminChatRoom() {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingText, setEditingText] = useState("");
   const messagesEndRef = useRef(null);
+  const channelRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -29,7 +30,9 @@ function AdminChatRoom() {
     subscribeToMessages();
 
     return () => {
-      supabase.channel("chat_messages").unsubscribe();
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+      }
     };
   }, [roomId]);
 
@@ -64,8 +67,8 @@ function AdminChatRoom() {
   };
 
   const subscribeToMessages = () => {
-    const channel = supabase
-      .channel("chat_messages")
+    channelRef.current = supabase
+      .channel(`chat_messages_${roomId}`)
       .on(
         "postgres_changes",
         {
@@ -75,6 +78,7 @@ function AdminChatRoom() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("INSERT event:", payload);
           setMessages((prev) => [...prev, payload.new]);
         }
       )
@@ -87,6 +91,7 @@ function AdminChatRoom() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("UPDATE event:", payload);
           setMessages((prev) =>
             prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
           );
@@ -101,10 +106,13 @@ function AdminChatRoom() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("DELETE event:", payload);
           setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+      });
   };
 
   const sendMessage = async (e) => {
@@ -141,11 +149,13 @@ function AdminChatRoom() {
         method: "DELETE",
       });
 
-      if (response.ok) {
-        setMessages(messages.filter((msg) => msg.id !== messageId));
+      if (!response.ok) {
+        alert("Failed to delete message");
       }
+      // Don't manually update state - let Supabase real-time handle it
     } catch (error) {
       console.error("Error deleting message:", error);
+      alert("Error deleting message");
     }
   };
 
@@ -173,15 +183,14 @@ function AdminChatRoom() {
       });
 
       if (response.ok) {
-        setMessages(
-          messages.map((msg) =>
-            msg.id === messageId ? { ...msg, message: editingText } : msg
-          )
-        );
         cancelEdit();
+        // Don't manually update state - let Supabase real-time handle it
+      } else {
+        alert("Failed to update message");
       }
     } catch (error) {
       console.error("Error updating message:", error);
+      alert("Error updating message");
     }
   };
 

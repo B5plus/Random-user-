@@ -16,6 +16,7 @@ function PlayerChatRoom() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
+  const channelRef = useRef(null);
 
   useEffect(() => {
     if (!user) {
@@ -27,7 +28,9 @@ function PlayerChatRoom() {
     subscribeToMessages();
 
     return () => {
-      supabase.channel("chat_messages").unsubscribe();
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+      }
     };
   }, [roomId, user]);
 
@@ -50,8 +53,8 @@ function PlayerChatRoom() {
   };
 
   const subscribeToMessages = () => {
-    const channel = supabase
-      .channel("chat_messages")
+    channelRef.current = supabase
+      .channel(`chat_messages_${roomId}`)
       .on(
         "postgres_changes",
         {
@@ -61,6 +64,7 @@ function PlayerChatRoom() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("Player - INSERT event:", payload);
           setMessages((prev) => [...prev, payload.new]);
         }
       )
@@ -73,6 +77,7 @@ function PlayerChatRoom() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("Player - UPDATE event:", payload);
           setMessages((prev) =>
             prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
           );
@@ -87,10 +92,13 @@ function PlayerChatRoom() {
           filter: `room_id=eq.${roomId}`,
         },
         (payload) => {
+          console.log("Player - DELETE event:", payload);
           setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Player - Subscription status:", status);
+      });
   };
 
   if (loading) {
