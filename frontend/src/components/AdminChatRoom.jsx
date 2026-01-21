@@ -144,18 +144,38 @@ function AdminChatRoom() {
       return;
     }
 
+    console.log("Deleting message:", messageId);
+    console.log("API URL:", API_URL);
+
     try {
-      const response = await fetch(`${API_URL}/api/chat/messages/${messageId}`, {
+      const url = `${API_URL}/api/chat/messages/${messageId}`;
+      console.log("DELETE request to:", url);
+
+      const response = await fetch(url, {
         method: "DELETE",
       });
 
-      if (!response.ok) {
-        alert("Failed to delete message");
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Delete response data:", data);
+        console.log("Message deleted successfully from backend");
+        // Manually update state as fallback (real-time should also update)
+        setMessages((prev) => {
+          const newMessages = prev.filter((msg) => msg.id !== messageId);
+          console.log("Messages after delete:", newMessages.length);
+          return newMessages;
+        });
+      } else {
+        const errorData = await response.json();
+        console.error("Delete failed:", errorData);
+        alert(`Failed to delete message: ${errorData.message || 'Unknown error'}`);
       }
-      // Don't manually update state - let Supabase real-time handle it
     } catch (error) {
       console.error("Error deleting message:", error);
-      alert("Error deleting message");
+      alert(`Error deleting message: ${error.message}`);
     }
   };
 
@@ -183,9 +203,17 @@ function AdminChatRoom() {
       });
 
       if (response.ok) {
+        console.log("Message updated successfully in backend");
+        // Manually update state as fallback (real-time should also update)
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === messageId ? { ...msg, message: editingText } : msg
+          )
+        );
         cancelEdit();
-        // Don't manually update state - let Supabase real-time handle it
       } else {
+        const errorData = await response.json();
+        console.error("Update failed:", errorData);
         alert("Failed to update message");
       }
     } catch (error) {
