@@ -121,6 +121,39 @@ class ChatController {
     }
   }
 
+  async updateMessage(req, res) {
+    try {
+      const { messageId } = req.params;
+      const { message } = req.body;
+
+      if (!message) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required field",
+          message: "Please provide message",
+        });
+      }
+
+      const updatedMessage = await chatService.updateMessage(
+        messageId,
+        message,
+      );
+
+      res.json({
+        success: true,
+        message: "Message updated successfully",
+        data: updatedMessage,
+      });
+    } catch (error) {
+      console.error("Error updating message:", error);
+      res.status(500).json({
+        success: false,
+        error: "Database error",
+        message: error.message,
+      });
+    }
+  }
+
   async getPlayerRooms(req, res) {
     try {
       const { whatsapp_phone } = req.query;

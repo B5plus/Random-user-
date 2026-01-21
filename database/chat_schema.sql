@@ -24,6 +24,14 @@ CREATE POLICY "Allow read access to chat messages" ON chat_messages
 CREATE POLICY "Allow insert chat messages" ON chat_messages
   FOR INSERT WITH CHECK (true);
 
+-- Create policy to allow update (we'll handle authorization in backend)
+CREATE POLICY "Allow update chat messages" ON chat_messages
+  FOR UPDATE USING (true);
+
+-- Create policy to allow delete (we'll handle authorization in backend)
+CREATE POLICY "Allow delete chat messages" ON chat_messages
+  FOR DELETE USING (true);
+
 -- Enable Realtime for chat_messages table
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
 

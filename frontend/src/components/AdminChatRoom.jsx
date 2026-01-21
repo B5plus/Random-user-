@@ -14,6 +14,8 @@ function AdminChatRoom() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState("");
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -102,6 +104,60 @@ function AdminChatRoom() {
     }
   };
 
+  const deleteMessage = async (messageId) => {
+    if (!confirm("Are you sure you want to delete this message?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/chat/messages/${messageId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setMessages(messages.filter((msg) => msg.id !== messageId));
+      }
+    } catch (error) {
+      console.error("Error deleting message:", error);
+    }
+  };
+
+  const startEditMessage = (message) => {
+    setEditingMessageId(message.id);
+    setEditingText(message.message);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
+  };
+
+  const updateMessage = async (messageId) => {
+    if (!editingText.trim()) {
+      alert("Message cannot be empty");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/chat/messages/${messageId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: editingText }),
+      });
+
+      if (response.ok) {
+        setMessages(
+          messages.map((msg) =>
+            msg.id === messageId ? { ...msg, message: editingText } : msg
+          )
+        );
+        cancelEdit();
+      }
+    } catch (error) {
+      console.error("Error updating message:", error);
+    }
+  };
+
   if (loading) {
     return <div style={styles.loading}>Loading chat...</div>;
   }
@@ -136,11 +192,58 @@ function AdminChatRoom() {
               ...(msg.sender_type === "admin" ? styles.adminMessage : styles.playerMessage),
             }}
           >
-            <div style={styles.senderName}>{msg.sender_name}</div>
-            <div style={styles.messageText}>{msg.message}</div>
-            <div style={styles.timestamp}>
-              {new Date(msg.created_at).toLocaleTimeString()}
-            </div>
+            {editingMessageId === msg.id ? (
+              // Edit mode
+              <div style={styles.editContainer}>
+                <input
+                  type="text"
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  style={styles.editInput}
+                  autoFocus
+                />
+                <div style={styles.editButtons}>
+                  <button
+                    onClick={() => updateMessage(msg.id)}
+                    style={styles.saveButton}
+                  >
+                    ✓ Save
+                  </button>
+                  <button onClick={cancelEdit} style={styles.cancelButton}>
+                    ✕ Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // View mode
+              <>
+                <div style={styles.messageHeader}>
+                  <div style={styles.senderName}>{msg.sender_name}</div>
+                  {msg.sender_type === "admin" && (
+                    <div style={styles.messageActions}>
+                      <button
+                        onClick={() => startEditMessage(msg)}
+                        style={styles.actionButton}
+                        title="Edit message"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => deleteMessage(msg.id)}
+                        style={styles.actionButton}
+                        title="Delete message"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div style={styles.messageText}>{msg.message}</div>
+                <div style={styles.timestamp}>
+                  {new Date(msg.created_at).toLocaleTimeString()}
+                </div>
+              </>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -243,30 +346,57 @@ const styles = {
     marginBottom: "20px",
     padding: "15px 20px",
     borderRadius: "16px",
-    maxWidth: "65%",
+    maxWidth: "fit-content",
+    minWidth: "150px",
     boxShadow: "0 2px 10px rgba(0, 0, 0, 0.3)",
     animation: "slideIn 0.3s ease-out",
+    display: "inline-block",
   },
   adminMessage: {
     background: "linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%)",
     marginLeft: "auto",
     textAlign: "right",
     borderBottomRightRadius: "4px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-end",
   },
   playerMessage: {
     background: "linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%)",
     marginRight: "auto",
     borderBottomLeftRadius: "4px",
     border: "1px solid #333",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+  messageHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    marginBottom: "8px",
   },
   senderName: {
     fontSize: "13px",
     fontWeight: "700",
-    marginBottom: "8px",
     color: "#fff",
     opacity: 0.9,
     textTransform: "uppercase",
     letterSpacing: "0.5px",
+  },
+  messageActions: {
+    display: "flex",
+    gap: "8px",
+  },
+  actionButton: {
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "16px",
+    padding: "4px",
+    opacity: 0.7,
+    transition: "all 0.2s",
   },
   messageText: {
     color: "#fff",
@@ -280,6 +410,45 @@ const styles = {
     color: "#ccc",
     opacity: 0.7,
     fontWeight: "500",
+  },
+  editContainer: {
+    width: "100%",
+  },
+  editInput: {
+    width: "100%",
+    padding: "10px",
+    backgroundColor: "#0f0f0f",
+    border: "2px solid #8B1538",
+    color: "#fff",
+    borderRadius: "8px",
+    fontSize: "15px",
+    marginBottom: "10px",
+    outline: "none",
+  },
+  editButtons: {
+    display: "flex",
+    gap: "10px",
+    justifyContent: "flex-end",
+  },
+  saveButton: {
+    padding: "8px 16px",
+    background: "linear-gradient(135deg, #1e5a3e 0%, #164a2f 100%)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "600",
+  },
+  cancelButton: {
+    padding: "8px 16px",
+    background: "linear-gradient(135deg, #5a1e1e 0%, #4a1616 100%)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "600",
   },
   inputContainer: {
     display: "flex",

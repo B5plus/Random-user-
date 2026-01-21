@@ -6,6 +6,7 @@ router.post("/messages", chatController.sendMessage);
 router.get("/rooms/:roomId/messages", chatController.getRoomMessages);
 router.post("/rooms/:roomId/verify-access", chatController.verifyPlayerAccess);
 router.delete("/messages/:messageId", chatController.deleteMessage);
+router.put("/messages/:messageId", chatController.updateMessage);
 router.get("/player/rooms", chatController.getPlayerRooms);
 
 module.exports = router;

@@ -68,6 +68,20 @@ class ChatService {
     return data[0];
   }
 
+  async updateMessage(messageId, newMessage) {
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .update({ message: newMessage })
+      .eq("id", messageId)
+      .select();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data[0];
+  }
+
   async getPlayerRooms(whatsappPhone) {
     const { data, error } = await supabase
       .from("room_members_details")
