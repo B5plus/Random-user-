@@ -2,7 +2,8 @@ const supabase = require("../config/database");
 
 class ChatService {
   async sendMessage(messageData) {
-    const { room_id, sender_type, sender_id, sender_name, message } = messageData;
+    const { room_id, sender_type, sender_id, sender_name, message } =
+      messageData;
 
     const { data, error } = await supabase
       .from("chat_messages")
@@ -66,7 +67,20 @@ class ChatService {
 
     return data[0];
   }
+
+  async getPlayerRooms(whatsappPhone) {
+    const { data, error } = await supabase
+      .from("room_members_details")
+      .select("*")
+      .eq("whatsapp_phone", whatsappPhone)
+      .order("added_at", { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  }
 }
 
 module.exports = new ChatService();
-

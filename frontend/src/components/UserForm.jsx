@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import './UserForm.css';
 import API_URL from '../config/api';
 
@@ -139,6 +140,15 @@ const UserForm = () => {
             {loading ? 'Submitting...' : 'Submit'}
           </button>
         </form>
+
+        <div className="form-footer">
+          <p className="footer-text">
+            Already registered?{' '}
+            <Link to="/player/login" className="footer-link">
+              Login to view your groups
+            </Link>
+          </p>
+        </div>
         </div>
       </div>
     </div>

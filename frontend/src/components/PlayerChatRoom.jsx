@@ -99,8 +99,8 @@ function PlayerChatRoom() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <button onClick={() => navigate("/join-chat")} style={styles.backButton}>
-          ← Leave Chat
+        <button onClick={() => navigate("/player/login")} style={styles.backButton}>
+          ← Logout
         </button>
         <h2 style={styles.title}>{user?.room_name}</h2>
         <p style={styles.userName}>Logged in as: {user?.name}</p>

@@ -3,13 +3,15 @@ const chatService = require("../services/chatService");
 class ChatController {
   async sendMessage(req, res) {
     try {
-      const { room_id, sender_type, sender_id, sender_name, message } = req.body;
+      const { room_id, sender_type, sender_id, sender_name, message } =
+        req.body;
 
       if (!room_id || !sender_type || !sender_name || !message) {
         return res.status(400).json({
           success: false,
           error: "Missing required fields",
-          message: "Please provide room_id, sender_type, sender_name, and message",
+          message:
+            "Please provide room_id, sender_type, sender_name, and message",
         });
       }
 
@@ -70,7 +72,10 @@ class ChatController {
         });
       }
 
-      const result = await chatService.verifyPlayerAccess(roomId, whatsapp_phone);
+      const result = await chatService.verifyPlayerAccess(
+        roomId,
+        whatsapp_phone,
+      );
 
       if (!result.hasAccess) {
         return res.status(403).json({
@@ -115,7 +120,35 @@ class ChatController {
       });
     }
   }
+
+  async getPlayerRooms(req, res) {
+    try {
+      const { whatsapp_phone } = req.query;
+
+      if (!whatsapp_phone) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required field",
+          message: "Please provide whatsapp_phone",
+        });
+      }
+
+      const rooms = await chatService.getPlayerRooms(whatsapp_phone);
+
+      res.json({
+        success: true,
+        count: rooms.length,
+        data: rooms,
+      });
+    } catch (error) {
+      console.error("Error fetching player rooms:", error);
+      res.status(500).json({
+        success: false,
+        error: "Database error",
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = new ChatController();
-
