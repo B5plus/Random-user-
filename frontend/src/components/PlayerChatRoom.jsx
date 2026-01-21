@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import API_URL from "../config/api";
+import "./ChatRoom.css";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -13,7 +14,6 @@ function PlayerChatRoom() {
   const navigate = useNavigate();
   const { user, whatsappPhone } = location.state || {};
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
@@ -64,32 +64,33 @@ function PlayerChatRoom() {
           setMessages((prev) => [...prev, payload.new]);
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+        }
+      )
       .subscribe();
-  };
-
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim()) return;
-
-    try {
-      const response = await fetch(`${API_URL}/api/chat/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room_id: roomId,
-          sender_type: "player",
-          sender_id: user.user_id,
-          sender_name: user.name,
-          message: newMessage,
-        }),
-      });
-
-      if (response.ok) {
-        setNewMessage("");
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
   };
 
   if (loading) {
@@ -97,11 +98,12 @@ function PlayerChatRoom() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div style={styles.container} className="chat-container">
+      <div style={styles.header} className="chat-header">
         <button
           onClick={() => navigate("/player/login")}
           style={styles.backButton}
+          className="chat-back-button"
           onMouseEnter={(e) => {
             e.target.style.backgroundColor = "#8B1538";
             e.target.style.transform = "translateX(-5px)";
@@ -113,61 +115,43 @@ function PlayerChatRoom() {
         >
           ← Logout
         </button>
-        <h2 style={styles.title}>{user?.room_name}</h2>
-        <p style={styles.userName}>👤 {user?.name} • Player Chat Room</p>
+        <h2 style={styles.title} className="chat-title">{user?.room_name}</h2>
+        <p style={styles.userName} className="chat-username">👤 {user?.name} • Player Chat Room</p>
       </div>
 
-      <div style={styles.messagesContainer}>
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            style={{
-              ...styles.message,
-              ...(msg.sender_type === "admin" ? styles.adminMessage : styles.playerMessage),
-              ...(msg.sender_id === user.user_id ? styles.myMessage : {}),
-            }}
-          >
-            <div style={styles.senderName}>{msg.sender_name}</div>
-            <div style={styles.messageText}>{msg.message}</div>
-            <div style={styles.timestamp}>
-              {new Date(msg.created_at).toLocaleTimeString()}
-            </div>
+      <div style={styles.messagesContainer} className="chat-messages-container">
+        {messages.length === 0 ? (
+          <div style={styles.emptyState}>
+            <p style={styles.emptyIcon}>💬</p>
+            <p style={styles.emptyText}>No messages yet</p>
+            <p style={styles.emptySubtext}>Waiting for admin to send messages...</p>
           </div>
-        ))}
+        ) : (
+          messages.map((msg) => (
+            <div
+              key={msg.id}
+              className="chat-message"
+              style={{
+                ...styles.message,
+                ...(msg.sender_type === "admin" ? styles.adminMessage : styles.playerMessage),
+              }}
+            >
+              <div style={styles.senderName} className="chat-sender-name">{msg.sender_name}</div>
+              <div style={styles.messageText} className="chat-message-text">{msg.message}</div>
+              <div style={styles.timestamp} className="chat-timestamp">
+                {new Date(msg.created_at).toLocaleTimeString()}
+              </div>
+            </div>
+          ))
+        )}
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} style={styles.inputContainer}>
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          style={styles.input}
-          onFocus={(e) => {
-            e.target.style.borderColor = "#8B1538";
-            e.target.style.boxShadow = "0 0 0 3px rgba(139, 21, 56, 0.2)";
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = "#333";
-            e.target.style.boxShadow = "none";
-          }}
-        />
-        <button
-          type="submit"
-          style={styles.sendButton}
-          onMouseEnter={(e) => {
-            e.target.style.transform = "translateY(-2px)";
-            e.target.style.boxShadow = "0 6px 20px rgba(139, 21, 56, 0.6)";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "translateY(0)";
-            e.target.style.boxShadow = "0 4px 15px rgba(139, 21, 56, 0.4)";
-          }}
-        >
-          Send 📤
-        </button>
-      </form>
+      <div style={styles.viewOnlyFooter}>
+        <p style={styles.viewOnlyText}>
+          📖 View Only • You can only read messages from admin
+        </p>
+      </div>
     </div>
   );
 }
@@ -290,38 +274,43 @@ const styles = {
     opacity: 0.7,
     fontWeight: "500",
   },
-  inputContainer: {
-    display: "flex",
-    padding: "25px 30px",
+  viewOnlyFooter: {
+    padding: "20px 30px",
     background: "linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)",
     borderTop: "3px solid #8B1538",
-    gap: "15px",
     boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.5)",
+    textAlign: "center",
   },
-  input: {
-    flex: 1,
-    padding: "15px 20px",
-    backgroundColor: "#0f0f0f",
-    border: "2px solid #333",
-    color: "#fff",
-    borderRadius: "12px",
-    fontSize: "15px",
-    outline: "none",
-    transition: "all 0.3s",
+  viewOnlyText: {
+    color: "#999",
+    fontSize: "14px",
+    margin: 0,
+    fontWeight: "600",
+    letterSpacing: "0.5px",
   },
-  sendButton: {
-    padding: "15px 35px",
-    background: "linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%)",
+  emptyState: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+    padding: "40px",
+  },
+  emptyIcon: {
+    fontSize: "64px",
+    margin: "0 0 20px 0",
+    opacity: 0.5,
+  },
+  emptyText: {
     color: "#fff",
-    border: "none",
-    borderRadius: "12px",
-    cursor: "pointer",
+    fontSize: "24px",
     fontWeight: "700",
-    fontSize: "15px",
-    textTransform: "uppercase",
-    letterSpacing: "1px",
-    transition: "all 0.3s",
-    boxShadow: "0 4px 15px rgba(139, 21, 56, 0.4)",
+    margin: "0 0 10px 0",
+  },
+  emptySubtext: {
+    color: "#999",
+    fontSize: "16px",
+    margin: 0,
   },
 };
 

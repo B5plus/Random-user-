@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import API_URL from "../config/api";
+import "./ChatRoom.css";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -75,6 +76,32 @@ function AdminChatRoom() {
         },
         (payload) => {
           setMessages((prev) => [...prev, payload.new]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
         }
       )
       .subscribe();
@@ -163,11 +190,12 @@ function AdminChatRoom() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
+    <div style={styles.container} className="chat-container">
+      <div style={styles.header} className="chat-header">
         <button
           onClick={() => navigate("/rooms")}
           style={styles.backButton}
+          className="chat-back-button"
           onMouseEnter={(e) => {
             e.target.style.backgroundColor = "#8B1538";
             e.target.style.transform = "translateX(-5px)";
@@ -179,14 +207,15 @@ function AdminChatRoom() {
         >
           ← Back to Rooms
         </button>
-        <h2 style={styles.title}>Chat: {room?.name}</h2>
-        <p style={styles.subtitle}>Admin Chat Room • Real-time messaging</p>
+        <h2 style={styles.title} className="chat-title">Chat: {room?.name}</h2>
+        <p style={styles.subtitle} className="chat-subtitle">Admin Chat Room • Real-time messaging</p>
       </div>
 
-      <div style={styles.messagesContainer}>
+      <div style={styles.messagesContainer} className="chat-messages-container">
         {messages.map((msg) => (
           <div
             key={msg.id}
+            className="chat-message"
             style={{
               ...styles.message,
               ...(msg.sender_type === "admin" ? styles.adminMessage : styles.playerMessage),
@@ -200,16 +229,22 @@ function AdminChatRoom() {
                   value={editingText}
                   onChange={(e) => setEditingText(e.target.value)}
                   style={styles.editInput}
+                  className="chat-edit-input"
                   autoFocus
                 />
                 <div style={styles.editButtons}>
                   <button
                     onClick={() => updateMessage(msg.id)}
                     style={styles.saveButton}
+                    className="chat-save-button"
                   >
                     ✓ Save
                   </button>
-                  <button onClick={cancelEdit} style={styles.cancelButton}>
+                  <button
+                    onClick={cancelEdit}
+                    style={styles.cancelButton}
+                    className="chat-cancel-button"
+                  >
                     ✕ Cancel
                   </button>
                 </div>
@@ -218,12 +253,13 @@ function AdminChatRoom() {
               // View mode
               <>
                 <div style={styles.messageHeader}>
-                  <div style={styles.senderName}>{msg.sender_name}</div>
+                  <div style={styles.senderName} className="chat-sender-name">{msg.sender_name}</div>
                   {msg.sender_type === "admin" && (
-                    <div style={styles.messageActions}>
+                    <div style={styles.messageActions} className="chat-message-actions">
                       <button
                         onClick={() => startEditMessage(msg)}
                         style={styles.actionButton}
+                        className="chat-action-button"
                         title="Edit message"
                       >
                         ✏️
@@ -231,6 +267,7 @@ function AdminChatRoom() {
                       <button
                         onClick={() => deleteMessage(msg.id)}
                         style={styles.actionButton}
+                        className="chat-action-button"
                         title="Delete message"
                       >
                         🗑️
@@ -238,8 +275,8 @@ function AdminChatRoom() {
                     </div>
                   )}
                 </div>
-                <div style={styles.messageText}>{msg.message}</div>
-                <div style={styles.timestamp}>
+                <div style={styles.messageText} className="chat-message-text">{msg.message}</div>
+                <div style={styles.timestamp} className="chat-timestamp">
                   {new Date(msg.created_at).toLocaleTimeString()}
                 </div>
               </>
@@ -249,13 +286,14 @@ function AdminChatRoom() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} style={styles.inputContainer}>
+      <form onSubmit={sendMessage} style={styles.inputContainer} className="chat-input-container">
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type your message..."
           style={styles.input}
+          className="chat-input"
           onFocus={(e) => {
             e.target.style.borderColor = "#8B1538";
             e.target.style.boxShadow = "0 0 0 3px rgba(139, 21, 56, 0.2)";
@@ -268,6 +306,7 @@ function AdminChatRoom() {
         <button
           type="submit"
           style={styles.sendButton}
+          className="chat-send-button"
           onMouseEnter={(e) => {
             e.target.style.transform = "translateY(-2px)";
             e.target.style.boxShadow = "0 6px 20px rgba(139, 21, 56, 0.6)";
