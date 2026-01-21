@@ -19,6 +19,7 @@ const corsOptions = {
       "http://localhost:5176",
       "https://random-user-1-yf7c.onrender.com",
       "https://random-user-2.onrender.com",
+      "https://random-user-1-wf0n.onrender.com",
       process.env.FRONTEND_URL,
     ].filter(Boolean);
 
