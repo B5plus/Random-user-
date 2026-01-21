@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './RoomsPage.css';
 import API_URL from '../config/api';
 
 const RoomsPage = () => {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [roomMembers, setRoomMembers] = useState([]);
@@ -224,6 +226,13 @@ const RoomsPage = () => {
                     </div>
                   </div>
                   <div className="room-action-buttons">
+                    <button
+                      className="chat-room-btn"
+                      onClick={() => navigate(`/admin/chat/${selectedRoom.id}`)}
+                      disabled={loading}
+                    >
+                      💬 Open Chat
+                    </button>
                     <button
                       className="download-list-btn"
                       onClick={downloadPlayerList}

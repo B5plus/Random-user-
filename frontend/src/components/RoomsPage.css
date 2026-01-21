@@ -206,6 +206,35 @@
   font-weight: 700;
 }
 
+/* Chat Room Button */
+.chat-room-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8B1538 0%, #6B0F2A 100%);
+  border: 2px solid #8B1538;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-room-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6B0F2A 0%, #4A0A1C 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 21, 56, 0.4);
+}
+
+.chat-room-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Download List Button */
 .download-list-btn {
   padding: 12px 24px;

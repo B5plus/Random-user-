@@ -1,0 +1,245 @@
+import { useState, useEffect, useRef } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { createClient } from "@supabase/supabase-js";
+import API_URL from "../config/api";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+function PlayerChatRoom() {
+  const { roomId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, whatsappPhone } = location.state || {};
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/join-chat");
+      return;
+    }
+
+    fetchMessages();
+    subscribeToMessages();
+
+    return () => {
+      supabase.channel("chat_messages").unsubscribe();
+    };
+  }, [roomId, user]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/chat/rooms/${roomId}/messages`);
+      const data = await response.json();
+      if (data.success) {
+        setMessages(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const subscribeToMessages = () => {
+    const channel = supabase
+      .channel("chat_messages")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/chat/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room_id: roomId,
+          sender_type: "player",
+          sender_id: user.user_id,
+          sender_name: user.name,
+          message: newMessage,
+        }),
+      });
+
+      if (response.ok) {
+        setNewMessage("");
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  if (loading) {
+    return <div style={styles.loading}>Loading chat...</div>;
+  }
+
+  return (
+    <div style={styles.container}>
+      <div style={styles.header}>
+        <button onClick={() => navigate("/join-chat")} style={styles.backButton}>
+          ← Leave Chat
+        </button>
+        <h2 style={styles.title}>{user?.room_name}</h2>
+        <p style={styles.userName}>Logged in as: {user?.name}</p>
+      </div>
+
+      <div style={styles.messagesContainer}>
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            style={{
+              ...styles.message,
+              ...(msg.sender_type === "admin" ? styles.adminMessage : styles.playerMessage),
+              ...(msg.sender_id === user.user_id ? styles.myMessage : {}),
+            }}
+          >
+            <div style={styles.senderName}>{msg.sender_name}</div>
+            <div style={styles.messageText}>{msg.message}</div>
+            <div style={styles.timestamp}>
+              {new Date(msg.created_at).toLocaleTimeString()}
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <form onSubmit={sendMessage} style={styles.inputContainer}>
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Type your message..."
+          style={styles.input}
+        />
+        <button type="submit" style={styles.sendButton}>
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
+
+const styles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    backgroundColor: "#1a1a1a",
+  },
+  header: {
+    padding: "20px",
+    backgroundColor: "#2a2a2a",
+    borderBottom: "2px solid #8B1538",
+  },
+  backButton: {
+    backgroundColor: "transparent",
+    color: "#fff",
+    border: "1px solid #8B1538",
+    padding: "8px 16px",
+    cursor: "pointer",
+    marginBottom: "10px",
+  },
+  title: {
+    color: "#fff",
+    margin: "0 0 5px 0",
+  },
+  userName: {
+    color: "#ccc",
+    fontSize: "14px",
+    margin: 0,
+  },
+  loading: {
+    color: "#fff",
+    textAlign: "center",
+    padding: "50px",
+  },
+  messagesContainer: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "20px",
+  },
+  message: {
+    marginBottom: "15px",
+    padding: "10px 15px",
+    borderRadius: "8px",
+    maxWidth: "70%",
+  },
+  adminMessage: {
+    backgroundColor: "#8B1538",
+    marginRight: "auto",
+  },
+  playerMessage: {
+    backgroundColor: "#2a2a2a",
+    marginRight: "auto",
+  },
+  myMessage: {
+    backgroundColor: "#1e5a3e",
+    marginLeft: "auto",
+    marginRight: 0,
+    textAlign: "right",
+  },
+  senderName: {
+    fontSize: "12px",
+    fontWeight: "bold",
+    marginBottom: "5px",
+    color: "#ccc",
+  },
+  messageText: {
+    color: "#fff",
+    marginBottom: "5px",
+  },
+  timestamp: {
+    fontSize: "10px",
+    color: "#999",
+  },
+  inputContainer: {
+    display: "flex",
+    padding: "20px",
+    backgroundColor: "#2a2a2a",
+    borderTop: "2px solid #8B1538",
+  },
+  input: {
+    flex: 1,
+    padding: "12px",
+    backgroundColor: "#1a1a1a",
+    border: "1px solid #8B1538",
+    color: "#fff",
+    borderRadius: "4px",
+    marginRight: "10px",
+  },
+  sendButton: {
+    padding: "12px 30px",
+    backgroundColor: "#8B1538",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
+};
+
+export default PlayerChatRoom;
+

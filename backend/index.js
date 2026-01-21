@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", chatRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
