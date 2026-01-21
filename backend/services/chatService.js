@@ -55,16 +55,28 @@ class ChatService {
   }
 
   async deleteMessage(messageId) {
+    console.log("Deleting message from database:", messageId);
+
     const { data, error } = await supabase
       .from("chat_messages")
       .delete()
       .eq("id", messageId)
       .select();
 
+    console.log("Delete result - data:", data);
+    console.log("Delete result - error:", error);
+
     if (error) {
+      console.error("Supabase delete error:", error);
       throw new Error(error.message);
     }
 
+    if (!data || data.length === 0) {
+      console.warn("No message was deleted - message might not exist");
+      throw new Error("Message not found or already deleted");
+    }
+
+    console.log("Message deleted successfully:", data[0]);
     return data[0];
   }
 

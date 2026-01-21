@@ -103,9 +103,11 @@ class ChatController {
   async deleteMessage(req, res) {
     try {
       const { messageId } = req.params;
+      console.log("DELETE request received for message:", messageId);
 
       const message = await chatService.deleteMessage(messageId);
 
+      console.log("Message deleted, sending success response");
       res.json({
         success: true,
         message: "Message deleted successfully",
